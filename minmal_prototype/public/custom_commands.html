@@ -1,179 +1,94 @@
 <html>
+
 <head>
     <link rel="stylesheet" href="style.css">
     <script src="/assets/ffmpeg/package/dist/umd/ffmpeg.js"></script>
     <script src="/assets/util/package/dist/umd/index.js"></script>
 </head>
+
 <body>
-<h3>Upload a video to transcode and play!</h3>
-<video id="output-video" controls></video><br/>
-<form>
-    <fieldset>
-        <legend>Upload</legend>
-        <input type="file" id="uploader">
-    </fieldset>
-    <fieldset>
-        <legend>Per File Main Options</legend>
-        <label for="output_file">Output Name:</label>
-        <input type="text" id="output_file" name="output_file"><br/>
-        <label for="force_format">Force Format:</label>
-        <input type="text" id="force_format" name="force_format"><br/>
-        <label for="codec_name">Codec Name:</label>
-        <input type="text" id="codec_name" name="codec_name"><br/>
-        <label for="file_bitrate">File Bitrate:</label>
-        <input type="number" id="file_bitrate" name="file_bitrate"><br/>
-        <label for="duration">Duration:</label>
-        <input type="number" id="duration" name="duration"><br/>
-        <label for="time_stop">Time Stop:</label>
-        <input type="text" id="time_stop" name="time_stop"><br/>
-        <label for="limit_size">Limit Size:</label>
-        <input type="number" id="limit_size" name="limit_size"><br/>
-        <label for="start_time_offset">Start Time Offset:</label>
-        <input type="number" id="start_time_offset" name="start_time_offset"><br/>
-        <label for="start_time_offset_relative_to_eof">Start Time Offset Relative to EOF:</label>
-        <input type="number" id="start_time_offset_relative_to_eof" name="start_time_offset_relative_to_eof"><br/>
-        <label for="recording_timestamp">Recording Timestamp:</label>
-        <input type="text" id="recording_timestamp" name="recording_timestamp"><br/>
-        <label for="target">Target:</label>
-        <input type="text" id="target" name="target"><br/>
-        <label for="preset">Preset:</label>
-        <input type="text" id="preset" name="preset"><br/>
-    </fieldset>
-    <fieldset>
-        <legend>Video Options</legend>
-        <label for="number_of_video_frames">Number of Video Frames:</label>
-        <input type="number" id="number_of_video_frames" name="number_of_video_frames"><br/>
-        <label for="frame_rate">Frame Rate:</label>
-        <input type="text" id="frame_rate" name="frame_rate"><br/>
-        <label for="max_frame_rate">Max Frame Rate:</label>
-        <input type="text" id="max_frame_rate" name="max_frame_rate"><br/>
-        <label for="frame_size">Frame Size:</label>
-        <input type="text" id="frame_size" name="frame_size"><br/>
-        <label for="aspect_ratio">Aspect Ratio:</label>
-        <input type="text" id="aspect_ratio" name="aspect_ratio"><br/>
-        <label for="force_video_codec">Force Video Codec:</label>
-        <input type="text" id="force_video_codec" name="force_video_codec"><br/>
-        <label for="video_bitrate">Video Bitrate:</label>
-        <input type="number" id="video_bitrate" name="video_bitrate"><br/>
-        <label for="pure_counter_clockwise_rotation">Pure Counter-Clockwise Rotation:</label>
-        <input type="number" id="pure_counter_clockwise_rotation" name="pure_counter_clockwise_rotation"><br/>
-        <label for="display_horizontal_flip">Display Horizontal Flip:</label>
-        <input type="checkbox" id="display_horizontal_flip" name="display_horizontal_flip"><br/>
-        <label for="display_vertical_flip">Display Vertical Flip:</label>
-        <input type="checkbox" id="display_vertical_flip" name="display_vertical_flip"><br/>
-        <label for="disable_video">Disable Video:</label>
-        <input type="checkbox" id="disable_video" name="disable_video"><br/>
-    </fieldset>
-    <fieldset>
-        <legend>Audio Options</legend>
-        <label for="number_of_audio_frames">Number of Audio Frames:</label>
-        <input type="number" id="number_of_audio_frames" name="number_of_audio_frames"><br/>
-        <label for="audio_quality">Audio Quality:</label>
-        <input type="text" id="audio_quality" name="audio_quality"><br/>
-        <label for="audio_sampling_rate">Audio Sampling Rate:</label>
-        <input type="number" id="audio_sampling_rate" name="audio_sampling_rate"><br/>
-        <label for="number_of_audio_channels">Number of Audio Channels:</label>
-        <input type="number" id="number_of_audio_channels" name="number_of_audio_channels"><br/>
-        <label for="disable_audio">Disable Audio:</label>
-        <input type="checkbox" id="disable_audio" name="disable_audio"><br/>
-        <label for="force_audio_codec">Force Audio Codec:</label>
-        <input type="text" id="force_audio_codec" name="force_audio_codec"><br/>
-        <label for="audio_bitrate">Audio Bitrate:</label>
-        <input type="number" id="audio_bitrate" name="audio_bitrate"><br/>
-        <label for="audio_filter">Audio Filter:</label>
-        <input type="text" id="audio_filter" name="audio_filter"><br/>
-    </fieldset>
-</form>
-<button id="transcode-btn">Transcode</button>
-<p id="message"></p>
-<script>
-    const { fetchFile } = FFmpegUtil;
-    const { FFmpeg } = FFmpegWASM;
-    let ffmpeg = null;
-
-    const transcode = async () => {
-        const uploader = document.getElementById('uploader');
-        const message = document.getElementById('message');
-        const output_file = document.getElementById('output_file').value;
-        const options = {
-            "-f": { "name": "force_format", "description": "force format", "type": "text" },
-            "-c": { "name": "codec_name", "description": "codec name", "type": "text" },
-            "-b": { "name": "file_bitrate", "description": "file bitrate", "type": "number" },
-            "-t": { "name": "duration", "description": "record or transcode 'duration' seconds of audio/video", "type": "number" },
-            "-to": { "name": "time_stop", "description": "record or transcode stop time", "type": "text" },
-            "-fs": { "name": "limit_size", "description": "set the limit file size in bytes", "type": "number" },
-            "-ss": { "name": "start_time_offset", "description": "set the start time offset", "type": "number" },
-            "-sseof": { "name": "start_time_offset_relative_to_eof", "description": "set the start time offset relative to EOF", "type": "number" },
-            "-timestamp": { "name": "recording_timestamp", "description": "set the recording timestamp ('now' to set the current time)", "type": "text" },
-            "-target": { "name": "target", "description": "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" with optional prefixes \"pal-\", \"ntsc-\" or \"film-\")", "type": "text" },
-            "-preset": {"name": "preset", "description": "set the encoding preset.", "type": "text"},
-            "-vframes": { "name": "number_of_video_frames", "description": "set the number of video frames to output", "type": "number" },
-            "-r": { "name": "frame_rate", "description": "set frame rate (Hz value, fraction or abbreviation)", "type": "text" },
-            "-fpsmax": { "name": "max_frame_rate", "description": "set max frame rate (Hz value, fraction or abbreviation)", "type": "text" },
-            "-s": { "name": "frame_size", "description": "set frame size (WxH or abbreviation)", "type": "text" },
-            "-aspect": { "name": "aspect_ratio", "description": "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "type": "text" },
-            "-c:v": { "name": "force_video_codec", "description": "force video codec ('copy' to copy stream)", "type": "text" },
-            "-b:v": { "name": "video_bitrate", "description": "video bitrate", "type": "number" },
-            "-display_rotation": { "name": "pure_counter_clockwise_rotation", "description": "set pure counter-clockwise rotation in degrees for stream(s)", "type": "number" },
-            "-display_hflip": { "name": "display_horizontal_flip", "description": "set display horizontal flip for stream(s) (overrides any display rotation if it is not set)", "type": "boolean" },
-            "-display_vflip": { "name": "display_vertical_flip", "description": "set display vertical flip for stream(s) (overrides any display rotation if it is not set)", "type": "boolean" },
-            "-vn": { "name": "disable_video", "description": "disable video", "type": "boolean" },
-            "-aframes": { "name": "number_of_audio_frames", "description": "set the number of audio frames to output", "type": "number" },
-            "-aq": { "name": "audio_quality", "description": "set audio quality (codec-specific)", "type": "text" },
-            "-ar": { "name": "audio_sampling_rate", "description": "set audio sampling rate (in Hz)", "type": "number" },
-            "-ac": { "name": "number_of_audio_channels", "description": "set number of audio channels", "type": "number" },
-            "-an": { "name": "disable_audio", "description": "disable audio", "type": "boolean" },
-            "-acodec": { "name": "force_audio_codec", "description": "force audio codec ('copy' to copy stream)", "type": "text" },
-            "-b:a": { "name": "audio_bitrate", "description": "audio bitrate", "type": "number" },
-            "-af": { "name": "audio_filter", "description": "set audio filter", "type": "string" }
-        }
-        if (ffmpeg === null) {
-            ffmpeg = new FFmpeg();
-            ffmpeg.on("log", ({ message }) => {
-                console.log(message);
-            })
-            ffmpeg.on("progress", ({ progress, time }) => {
-                message.innerHTML = `${progress * 100}%, time: ${time / 1000000}s`;
-            });
-            await ffmpeg.load({
-                coreURL: "/assets/core/package/dist/umd/ffmpeg-core.js",
-            });
-        }
-
-        const files = uploader.files;
-        if (files.length === 0) {
-            message.innerHTML = 'No file selected.';
-            return;
-        }
-
-        const { name } = files[0];
-        await ffmpeg.writeFile(name, await fetchFile(files[0]));
-        message.innerHTML = 'Start transcoding';
-        console.time('exec');
-        let args = [];
-        console.log(options)
-        for (const element in options) {
-            let name = options[element].name;
-            let value = document.getElementById(name).value;
-            if (value !== "" && value != null && document.getElementById(name).type !== "checkbox") {
-                args.push(element);
-                args.push(value)
-            } else if(document.getElementById(name).type === "checkbox" && document.getElementById(name).checked){
-                args.push(element);
-            }
-        }
-        console.log("ffmpeg -i " + name + " " + args.join(" ") + " " + output_file)
-        await ffmpeg.exec(['-i', name, ...args, output_file]);
-        console.timeEnd('exec');
-        message.innerHTML = 'Complete transcoding';
-
-        const data = await ffmpeg.readFile(output_file);
-        const video = document.getElementById('output-video');
-        video.src = URL.createObjectURL(new Blob([data.buffer]));
-    };
-
-    const transcodeButton = document.getElementById('transcode-btn');
-    transcodeButton.addEventListener('click', transcode);
-</script>
+    <h3>Upload a video to transcode and play!</h3>
+    <video id="output-video" controls></video><br />
+    <form>
+        <fieldset>
+            <legend>Upload</legend>
+            <input type="file" id="uploader">
+        </fieldset>
+        <fieldset>
+            <legend>Per File Main Options</legend>
+            <label for="output_file">Output Name:</label>
+            <input type="text" id="output_file" name="output_file"><br />
+            <label for="force_format">Force Format:</label>
+            <input type="text" id="force_format" name="force_format"><br />
+            <label for="codec_name">Codec Name:</label>
+            <input type="text" id="codec_name" name="codec_name"><br />
+            <label for="file_bitrate">File Bitrate:</label>
+            <input type="number" id="file_bitrate" name="file_bitrate"><br />
+            <label for="duration">Duration:</label>
+            <input type="number" id="duration" name="duration"><br />
+            <label for="time_stop">Time Stop:</label>
+            <input type="text" id="time_stop" name="time_stop"><br />
+            <label for="limit_size">Limit Size:</label>
+            <input type="number" id="limit_size" name="limit_size"><br />
+            <label for="start_time_offset">Start Time Offset:</label>
+            <input type="number" id="start_time_offset" name="start_time_offset"><br />
+            <label for="start_time_offset_relative_to_eof">Start Time Offset Relative to EOF:</label>
+            <input type="number" id="start_time_offset_relative_to_eof" name="start_time_offset_relative_to_eof"><br />
+            <label for="recording_timestamp">Recording Timestamp:</label>
+            <input type="text" id="recording_timestamp" name="recording_timestamp"><br />
+            <label for="target">Target:</label>
+            <input type="text" id="target" name="target"><br />
+            <label for="preset">Preset:</label>
+            <input type="text" id="preset" name="preset"><br />
+        </fieldset>
+        <fieldset>
+            <legend>Video Options</legend>
+            <label for="number_of_video_frames">Number of Video Frames:</label>
+            <input type="number" id="number_of_video_frames" name="number_of_video_frames"><br />
+            <label for="frame_rate">Frame Rate:</label>
+            <input type="text" id="frame_rate" name="frame_rate"><br />
+            <label for="max_frame_rate">Max Frame Rate:</label>
+            <input type="text" id="max_frame_rate" name="max_frame_rate"><br />
+            <label for="frame_size">Frame Size:</label>
+            <input type="text" id="frame_size" name="frame_size"><br />
+            <label for="aspect_ratio">Aspect Ratio:</label>
+            <input type="text" id="aspect_ratio" name="aspect_ratio"><br />
+            <label for="force_video_codec">Force Video Codec:</label>
+            <input type="text" id="force_video_codec" name="force_video_codec"><br />
+            <label for="video_bitrate">Video Bitrate:</label>
+            <input type="number" id="video_bitrate" name="video_bitrate"><br />
+            <label for="pure_counter_clockwise_rotation">Pure Counter-Clockwise Rotation:</label>
+            <input type="number" id="pure_counter_clockwise_rotation" name="pure_counter_clockwise_rotation"><br />
+            <label for="display_horizontal_flip">Display Horizontal Flip:</label>
+            <input type="checkbox" id="display_horizontal_flip" name="display_horizontal_flip"><br />
+            <label for="display_vertical_flip">Display Vertical Flip:</label>
+            <input type="checkbox" id="display_vertical_flip" name="display_vertical_flip"><br />
+            <label for="disable_video">Disable Video:</label>
+            <input type="checkbox" id="disable_video" name="disable_video"><br />
+        </fieldset>
+        <fieldset>
+            <legend>Audio Options</legend>
+            <label for="number_of_audio_frames">Number of Audio Frames:</label>
+            <input type="number" id="number_of_audio_frames" name="number_of_audio_frames"><br />
+            <label for="audio_quality">Audio Quality:</label>
+            <input type="text" id="audio_quality" name="audio_quality"><br />
+            <label for="audio_sampling_rate">Audio Sampling Rate:</label>
+            <input type="number" id="audio_sampling_rate" name="audio_sampling_rate"><br />
+            <label for="number_of_audio_channels">Number of Audio Channels:</label>
+            <input type="number" id="number_of_audio_channels" name="number_of_audio_channels"><br />
+            <label for="disable_audio">Disable Audio:</label>
+            <input type="checkbox" id="disable_audio" name="disable_audio"><br />
+            <label for="force_audio_codec">Force Audio Codec:</label>
+            <input type="text" id="force_audio_codec" name="force_audio_codec"><br />
+            <label for="audio_bitrate">Audio Bitrate:</label>
+            <input type="number" id="audio_bitrate" name="audio_bitrate"><br />
+            <label for="audio_filter">Audio Filter:</label>
+            <input type="text" id="audio_filter" name="audio_filter"><br />
+        </fieldset>
+    </form>
+    <button id="transcode-btn">Transcode</button>
+    <p id="message"></p>
+    <script src="conversion.js"></script>
 </body>
+
 </html>
