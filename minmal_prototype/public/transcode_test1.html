@@ -1,15 +1,17 @@
 <html>
 <head>
     <link rel="stylesheet" href="style.css">
+    <script src="/assets/ffmpeg/package/dist/umd/ffmpeg.js"></script>
+    <script src="/assets/util/package/dist/umd/index.js"></script>
 </head>
 <body>
 <h3>Upload a video to transcode to mp4 (x264) and play!</h3>
 <video id="output-video" controls></video><br/>
 <input type="file" id="uploader">
 <p id="message"></p>
-<script type="module">
-    import { FFmpeg } from "/assets/ffmpeg/package/dist/esm/index.js";
-    import { fetchFile } from "/assets/util/package/dist/esm/index.js";
+<script>
+    const { fetchFile } = FFmpegUtil;
+    const { FFmpeg } = FFmpegWASM;
     let ffmpeg = null;
 
     const transcode = async ({ target: { files } }) => {
@@ -19,17 +21,19 @@
             ffmpeg.on("log", ({ message }) => {
                 console.log(message);
             })
-            ffmpeg.on("progress", ({ progress }) => {
-                message.innerHTML = `${progress * 100} %`;
+            ffmpeg.on("progress", ({ progress, time }) => {
+                message.innerHTML = `${progress * 100} %, time: ${time / 1000000} s`;
             });
             await ffmpeg.load({
-                coreURL: "/assets/core-mt/package/dist/esm/ffmpeg-core.js",
+                coreURL: "/assets/core/package/dist/umd/ffmpeg-core.js",
             });
         }
         const { name } = files[0];
         await ffmpeg.writeFile(name, await fetchFile(files[0]));
         message.innerHTML = 'Start transcoding';
-        await ffmpeg.exec(['-i', name,  'output.mp4']);
+        console.time('exec')
+        await ffmpeg.exec(['-i', name, '-c:v', 'libx264', '-preset', 'ultrafast', 'output.mp4']);
+        console.timeEnd('exec');
         message.innerHTML = 'Complete transcoding';
         const data = await ffmpeg.readFile('output.mp4');
 
