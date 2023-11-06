@@ -18,6 +18,7 @@ const transcode = async () => {
         "-timestamp": { "name": "recording_timestamp", "description": "set the recording timestamp ('now' to set the current time)", "type": "text" },
         "-target": { "name": "target", "description": "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" with optional prefixes \"pal-\", \"ntsc-\" or \"film-\")", "type": "text" },
         "-preset": { "name": "preset", "description": "set the encoding preset.", "type": "text" },
+        "-vf": { "name": "video_filter", "description": "set video filters", "type": "string" },
         "-vframes": { "name": "number_of_video_frames", "description": "set the number of video frames to output", "type": "number" },
         "-r": { "name": "frame_rate", "description": "set frame rate (Hz value, fraction or abbreviation)", "type": "text" },
         "-fpsmax": { "name": "max_frame_rate", "description": "set max frame rate (Hz value, fraction or abbreviation)", "type": "text" },
@@ -26,8 +27,6 @@ const transcode = async () => {
         "-c:v": { "name": "force_video_codec", "description": "force video codec ('copy' to copy stream)", "type": "text" },
         "-b:v": { "name": "video_bitrate", "description": "video bitrate", "type": "number" },
         "-display_rotation": { "name": "pure_counter_clockwise_rotation", "description": "set pure counter-clockwise rotation in degrees for stream(s)", "type": "number" },
-        "-display_hflip": { "name": "display_horizontal_flip", "description": "set display horizontal flip for stream(s) (overrides any display rotation if it is not set)", "type": "boolean" },
-        "-display_vflip": { "name": "display_vertical_flip", "description": "set display vertical flip for stream(s) (overrides any display rotation if it is not set)", "type": "boolean" },
         "-vn": { "name": "disable_video", "description": "disable video", "type": "boolean" },
         "-aframes": { "name": "number_of_audio_frames", "description": "set the number of audio frames to output", "type": "number" },
         "-aq": { "name": "audio_quality", "description": "set audio quality (codec-specific)", "type": "text" },
@@ -69,7 +68,7 @@ const transcode = async () => {
         if (value !== "" && value != null && document.getElementById(name).type !== "checkbox") {
             args.push(element);
             args.push(value)
-        } else if (document.getElementById(name).type === "checkbox" && document.getElementById(name).checked) {
+        } else if (document.getElementById(name).type === "checkbox" && document.getElementById(name).checked && !name.includes("flip")) {
             args.push(element);
         }
     }
